@@ -159,19 +159,47 @@ async def grafikhari(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("📭 Belum ada data.")
         return
 
-    df["Tanggal"] = pd.to_datetime(df["Tanggal"])
+    # 🔥 Normalisasi kolom
+    df.columns = df.columns.str.strip()
+
+    # Paksa jumlah jadi angka
+    df["Jumlah"] = (
+        df["Jumlah"]
+        .astype(str)
+        .str.replace(".", "", regex=False)
+        .str.replace(",", "", regex=False)
+    )
+    df["Jumlah"] = pd.to_numeric(df["Jumlah"], errors="coerce").fillna(0)
+
+    # Paksa tipe uppercase
+    df["Tipe"] = df["Tipe"].astype(str).str.upper().str.strip()
+
+    # Parse tanggal
+    df["Tanggal"] = pd.to_datetime(df["Tanggal"], errors="coerce")
+    df = df.dropna(subset=["Tanggal"])
+
     df["TanggalOnly"] = df["Tanggal"].dt.date
 
+    # Filter
     masuk = df[df["Tipe"] == "MASUK"].groupby("TanggalOnly")["Jumlah"].sum()
     keluar = df[df["Tipe"] == "KELUAR"].groupby("TanggalOnly")["Jumlah"].sum()
 
+    if masuk.empty and keluar.empty:
+        await update.message.reply_text("⚠️ Data tidak terbaca untuk grafik.")
+        return
+
+    # Plot
     plt.figure()
-    masuk.plot(label="Masuk")
-    keluar.plot(label="Keluar")
+    if not masuk.empty:
+        masuk.plot(marker="o", label="Masuk")
+    if not keluar.empty:
+        keluar.plot(marker="o", label="Keluar")
+
     plt.legend()
     plt.title(f"Grafik Harian - {username}")
     plt.xlabel("Tanggal")
     plt.ylabel("Jumlah")
+    plt.tight_layout()
 
     filename = f"grafik_{username}_harian.png"
     plt.savefig(filename)
@@ -179,6 +207,7 @@ async def grafikhari(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_photo(photo=open(filename, "rb"))
     os.remove(filename)
+
 
 async def grafikbulan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = get_username(update)
@@ -190,19 +219,43 @@ async def grafikbulan(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("📭 Belum ada data.")
         return
 
-    df["Tanggal"] = pd.to_datetime(df["Tanggal"])
-    df["Bulan"] = df["Tanggal"].dt.to_period("M")
+    # Normalisasi
+    df.columns = df.columns.str.strip()
+
+    df["Jumlah"] = (
+        df["Jumlah"]
+        .astype(str)
+        .str.replace(".", "", regex=False)
+        .str.replace(",", "", regex=False)
+    )
+    df["Jumlah"] = pd.to_numeric(df["Jumlah"], errors="coerce").fillna(0)
+
+    df["Tipe"] = df["Tipe"].astype(str).str.upper().str.strip()
+
+    df["Tanggal"] = pd.to_datetime(df["Tanggal"], errors="coerce")
+    df = df.dropna(subset=["Tanggal"])
+
+    df["Bulan"] = df["Tanggal"].dt.to_period("M").astype(str)
 
     masuk = df[df["Tipe"] == "MASUK"].groupby("Bulan")["Jumlah"].sum()
     keluar = df[df["Tipe"] == "KELUAR"].groupby("Bulan")["Jumlah"].sum()
 
+    if masuk.empty and keluar.empty:
+        await update.message.reply_text("⚠️ Data tidak terbaca untuk grafik.")
+        return
+
+    # Plot
     plt.figure()
-    masuk.plot(label="Masuk")
-    keluar.plot(label="Keluar")
+    if not masuk.empty:
+        masuk.plot(marker="o", label="Masuk")
+    if not keluar.empty:
+        keluar.plot(marker="o", label="Keluar")
+
     plt.legend()
     plt.title(f"Grafik Bulanan - {username}")
     plt.xlabel("Bulan")
     plt.ylabel("Jumlah")
+    plt.tight_layout()
 
     filename = f"grafik_{username}_bulanan.png"
     plt.savefig(filename)
@@ -210,6 +263,7 @@ async def grafikbulan(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_photo(photo=open(filename, "rb"))
     os.remove(filename)
+
 
 
 
@@ -266,6 +320,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
