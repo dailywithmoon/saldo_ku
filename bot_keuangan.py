@@ -27,7 +27,19 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(
 client = gspread.authorize(creds)
 
 # GANTI dengan nama spreadsheet kamu
-sheet = client.open("Saldo_Ku").sheet1
+spreadsheet = client.open("Saldo_Ku")
+
+def get_user_sheet(username):
+    try:
+        return spreadsheet.worksheet(username)
+    except:
+        ws = spreadsheet.add_worksheet(title=username, rows=1000, cols=10)
+        ws.append_row(["Tanggal", "Tipe", "Jumlah", "Keterangan"])
+        return ws    
+
+def get_username(update):
+    user = update.effective_user
+    return user.username or user.first_name
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -55,41 +67,51 @@ async def simpan_transaksi(update, tipe, jumlah, keterangan):
 
 async def masuk(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        args = context.args
+        username = get_username(update)
+        sheet = get_user_sheet(username)
 
-        jumlah_text = args[0].replace(".", "").replace(",", "")
-        jumlah = int(jumlah_text)
-        keterangan = " ".join(args[1:]) if len(args) > 1 else "-"
+        jumlah = int(context.args[0])
+        keterangan = " ".join(context.args[1:])
 
-        user = update.effective_user.first_name
         tanggal = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-        print("SIAP SIMPAN KE SHEET...")
-        sheet.append_row([tanggal, user, "MASUK", jumlah, keterangan])
-        print("BERHASIL SIMPAN")
+        sheet.append_row([tanggal, "MASUK", jumlah, keterangan])
 
         await update.message.reply_text(
-            f"✅ Pemasukan dicatat!\n"
-            f"💰 Jumlah: {jumlah:,}\n"
-            f"📝 Ket: {keterangan}"
+            f"✅ Pemasukan dicatat untuk {username}\n"
+            f"💰 {jumlah}\n"
+            f"📝 {keterangan}"
         )
 
-    except Exception as e:
-        print("ERROR ASLI:", e)
-        await update.message.reply_text(f"❌ ERROR: {e}")
-
-
+    except:
+        await update.message.reply_text(
+            "❌ Format salah\nGunakan: /masuk 100000 gaji"
+        )
 
 
 async def keluar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        args = update.message.text.split(" ", 2)
-        jumlah = int(args[1])
-        keterangan = args[2]
-        await simpan_transaksi(update, "KELUAR", jumlah, keterangan)
-        await update.message.reply_text("✅ Pengeluaran tercatat")
+        username = get_username(update)
+        sheet = get_user_sheet(username)
+
+        jumlah = int(context.args[0])
+        keterangan = " ".join(context.args[1:])
+
+        tanggal = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+        sheet.append_row([tanggal, "KELUAR", jumlah, keterangan])
+
+        await update.message.reply_text(
+            f"✅ Pengeluaran dicatat untuk {username}\n"
+            f"💸 {jumlah}\n"
+            f"📝 {keterangan}"
+        )
+
     except:
-        await update.message.reply_text("❌ Format salah\n/keluar 25000 makan")
+        await update.message.reply_text(
+            "❌ Format salah\nGunakan: /keluar 50000 makan"
+        )
+
 
 async def rekap(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user.first_name
@@ -136,6 +158,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
