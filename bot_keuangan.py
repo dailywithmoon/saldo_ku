@@ -1,6 +1,6 @@
 import os
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
@@ -93,11 +93,15 @@ async def rekap(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("masuk", masuk))
     app.add_handler(CommandHandler("keluar", keluar))
     app.add_handler(CommandHandler("rekap", rekap))
+
+    print("Bot running...")
     app.run_polling()
 
 if __name__ == "__main__":
     main()
+
