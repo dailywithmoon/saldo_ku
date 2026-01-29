@@ -1,3 +1,5 @@
+import pandas as pd
+import matplotlib.pyplot as plt
 import json
 import os
 from telegram import Update
@@ -40,6 +42,11 @@ def get_user_sheet(username):
 def get_username(update):
     user = update.effective_user
     return user.username or user.first_name
+
+def get_dataframe_user(sheet):
+    data = sheet.get_all_records()
+    return pd.DataFrame(data)
+
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -142,6 +149,68 @@ async def rekapbulan(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🧮 Saldo       : {saldo}"
     )
 
+async def grafikhari(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    username = get_username(update)
+    sheet = get_user_sheet(username)
+
+    df = get_dataframe_user(sheet)
+
+    if df.empty:
+        await update.message.reply_text("📭 Belum ada data.")
+        return
+
+    df["Tanggal"] = pd.to_datetime(df["Tanggal"])
+    df["TanggalOnly"] = df["Tanggal"].dt.date
+
+    masuk = df[df["Tipe"] == "MASUK"].groupby("TanggalOnly")["Jumlah"].sum()
+    keluar = df[df["Tipe"] == "KELUAR"].groupby("TanggalOnly")["Jumlah"].sum()
+
+    plt.figure()
+    masuk.plot(label="Masuk")
+    keluar.plot(label="Keluar")
+    plt.legend()
+    plt.title(f"Grafik Harian - {username}")
+    plt.xlabel("Tanggal")
+    plt.ylabel("Jumlah")
+
+    filename = f"grafik_{username}_harian.png"
+    plt.savefig(filename)
+    plt.close()
+
+    await update.message.reply_photo(photo=open(filename, "rb"))
+    os.remove(filename)
+
+async def grafikbulan(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    username = get_username(update)
+    sheet = get_user_sheet(username)
+
+    df = get_dataframe_user(sheet)
+
+    if df.empty:
+        await update.message.reply_text("📭 Belum ada data.")
+        return
+
+    df["Tanggal"] = pd.to_datetime(df["Tanggal"])
+    df["Bulan"] = df["Tanggal"].dt.to_period("M")
+
+    masuk = df[df["Tipe"] == "MASUK"].groupby("Bulan")["Jumlah"].sum()
+    keluar = df[df["Tipe"] == "KELUAR"].groupby("Bulan")["Jumlah"].sum()
+
+    plt.figure()
+    masuk.plot(label="Masuk")
+    keluar.plot(label="Keluar")
+    plt.legend()
+    plt.title(f"Grafik Bulanan - {username}")
+    plt.xlabel("Bulan")
+    plt.ylabel("Jumlah")
+
+    filename = f"grafik_{username}_bulanan.png"
+    plt.savefig(filename)
+    plt.close()
+
+    await update.message.reply_photo(photo=open(filename, "rb"))
+    os.remove(filename)
+
 
 
 def hitung_rekap(sheet, mode="hari"):
@@ -187,6 +256,9 @@ def main():
     app.add_handler(CommandHandler("keluar", keluar))
     app.add_handler(CommandHandler("rekaphari", rekaphari))
     app.add_handler(CommandHandler("rekapbulan", rekapbulan))
+    app.add_handler(CommandHandler("grafikhari", grafikhari))
+    app.add_handler(CommandHandler("grafikbulan", grafikbulan))
+
 
 
     print("Bot running...")
@@ -194,6 +266,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
