@@ -1,3 +1,4 @@
+import requests
 import pandas as pd
 import matplotlib.pyplot as plt
 import json
@@ -322,6 +323,58 @@ def hitung_rekap(sheet, mode="hari"):
 
     return total_masuk, total_keluar, saldo
 
+async def analyzer(update, context):
+    # Ambil data user
+    username = get_username(update)
+    sheet = get_user_sheet(username)
+    df = get_dataframe_user(sheet)
+
+    if df.empty:
+        await update.message.reply_text("📭 Belum ada data untuk dianalisis.")
+        return
+
+    # Ringkas data (contoh sederhana)
+    summary = []
+    total_masuk = df[df["Tipe"] == "MASUK"]["Jumlah"].sum()
+    total_keluar = df[df["Tipe"] == "KELUAR"]["Jumlah"].sum()
+    summary.append(f"Data untuk {username}:")
+    summary.append(f"Total pemasukan: {total_masuk}")
+    summary.append(f"Total pengeluaran: {total_keluar}")
+
+    # Ambil 5 transaksi terakhir
+    last_rows = df.tail(5).to_dict("records")
+    summary.append("5 transaksi terakhir:")
+    for r in last_rows:
+        summary.append(f"- {r['Tanggal']} | {r['Tipe']} | {r['Jumlah']} | {r['Keterangan']}")
+
+    prompt = "\n".join(summary) + "\n\nBeri analisa ringkas dari data di atas:"
+
+    # === Panggil Hugging Face Inference API ===
+    HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-small"
+    headers = {}
+    hf_key = os.getenv("HF_API_KEY")
+    if hf_key:
+        headers["Authorization"] = f"Bearer {hf_key}"
+
+    payload = {
+        "inputs": prompt
+    }
+
+    try:
+        res = requests.post(HF_API_URL, headers=headers, json=payload, timeout=20)
+        res_data = res.json()
+
+        # Ambil text hasil inference
+        if isinstance(res_data, list) and "generated_text" in res_data[0]:
+            result_text = res_data[0]["generated_text"]
+        else:
+            result_text = str(res_data)
+
+        await update.message.reply_text(f"🤖 *Analisa Keuangan:*\n{result_text}", parse_mode="Markdown")
+
+    except Exception as e:
+        print("AI Analyzer Error:", e)
+        await update.message.reply_text("⚠️ Terjadi kesalahan saat memproses AI.")
 
 
 
@@ -371,13 +424,14 @@ def main():
     app.add_handler(CommandHandler("grafikbulan", grafikbulan))
     app.add_handler(CommandHandler("export", export_excel))
     app.add_handler(CommandHandler("help", help_command))
-
+    app.add_handler(CommandHandler("analyze", analyzer))
 
     print("Bot running...")
     app.run_polling()
 
 if __name__ == "__main__":
     main()
+
 
 
 
