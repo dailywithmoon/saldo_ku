@@ -323,6 +323,42 @@ def hitung_rekap(sheet, mode="hari"):
     return total_masuk, total_keluar, saldo
 
 
+
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = """
+🤖 *BOT PENCATATAN KEUANGAN*
+
+📌 *Perintah Utama*
+/start - Mulai bot
+/help - Lihat semua fitur
+
+💰 *Pencatatan*
+/masuk <jumlah> <keterangan>
+Contoh: /masuk 100000 gaji
+
+/keluar <jumlah> <keterangan>
+Contoh: /keluar 25000 jajan
+
+📊 *Rekap Data*
+/rekaphari - Rekap hari ini
+/rekapbulan - Rekap bulan ini
+
+📈 *Grafik*
+/grafikhari - Grafik pemasukan & pengeluaran harian
+/grafikbulan - Grafik pemasukan & pengeluaran bulanan
+
+📂 *Export*
+/export - Download data dalam format Excel
+
+👤 *Catatan*
+✔️ Data otomatis dipisahkan per user
+✔️ Bot berjalan 24 jam nonstop
+"""
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+
+
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -334,6 +370,7 @@ def main():
     app.add_handler(CommandHandler("grafikhari", grafikhari))
     app.add_handler(CommandHandler("grafikbulan", grafikbulan))
     app.add_handler(CommandHandler("export", export_excel))
+    alication.add_handler(CommandHandler("help", help_command))
 
 
     print("Bot running...")
@@ -341,6 +378,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
