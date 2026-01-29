@@ -1,3 +1,4 @@
+import json
 import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
@@ -14,10 +15,6 @@ scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
 ]
-
-import json
-import os
-from oauth2client.service_account import ServiceAccountCredentials
 
 google_creds_json = os.environ.get("GOOGLE_CREDS")
 google_creds_dict = json.loads(google_creds_json)
