@@ -370,7 +370,7 @@ def main():
     app.add_handler(CommandHandler("grafikhari", grafikhari))
     app.add_handler(CommandHandler("grafikbulan", grafikbulan))
     app.add_handler(CommandHandler("export", export_excel))
-    alication.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("help", help_command))
 
 
     print("Bot running...")
@@ -378,6 +378,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
