@@ -185,8 +185,8 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("masuk", masuk))
     app.add_handler(CommandHandler("keluar", keluar))
-    application.add_handler(CommandHandler("rekaphari", rekaphari))
-    application.add_handler(CommandHandler("rekapbulan", rekapbulan))
+    app.add_handler(CommandHandler("rekaphari", rekaphari))
+    app.add_handler(CommandHandler("rekapbulan", rekapbulan))
 
 
     print("Bot running...")
@@ -194,6 +194,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
