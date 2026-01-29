@@ -15,9 +15,17 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-creds = ServiceAccountCredentials.from_json_keyfile_name(
-    "service_account.json", scope
+import json
+import os
+from oauth2client.service_account import ServiceAccountCredentials
+
+google_creds_json = os.environ.get("GOOGLE_CREDS")
+google_creds_dict = json.loads(google_creds_json)
+
+creds = ServiceAccountCredentials.from_json_keyfile_dict(
+    google_creds_dict, scope
 )
+
 
 client = gspread.authorize(creds)
 
@@ -131,6 +139,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
