@@ -40,12 +40,30 @@ async def simpan_transaksi(update, tipe, jumlah, keterangan):
     ws.append_row([tanggal, tipe, jumlah, keterangan, user])
 
 async def masuk(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("RAW TEXT:", update.message.text)
-    print("ARGS:", context.args)
+    try:
+        args = context.args
 
-    await update.message.reply_text(
-        f"DEBUG\nText: {update.message.text}\nArgs: {context.args}"
-    )
+        jumlah_text = args[0].replace(".", "").replace(",", "")
+        jumlah = int(jumlah_text)
+        keterangan = " ".join(args[1:]) if len(args) > 1 else "-"
+
+        user = update.effective_user.first_name
+        tanggal = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+        print("SIAP SIMPAN KE SHEET...")
+        sheet.append_row([tanggal, user, "MASUK", jumlah, keterangan])
+        print("BERHASIL SIMPAN")
+
+        await update.message.reply_text(
+            f"✅ Pemasukan dicatat!\n"
+            f"💰 Jumlah: {jumlah:,}\n"
+            f"📝 Ket: {keterangan}"
+        )
+
+    except Exception as e:
+        print("ERROR ASLI:", e)
+        await update.message.reply_text(f"❌ ERROR: {e}")
+
 
 
 
@@ -104,6 +122,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
