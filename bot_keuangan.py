@@ -264,6 +264,27 @@ async def grafikbulan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_photo(photo=open(filename, "rb"))
     os.remove(filename)
 
+async def export_excel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    username = get_username(update)
+    sheet = get_user_sheet(username)
+    df = get_dataframe_user(sheet)
+
+    if df.empty:
+        await update.message.reply_text("📭 Tidak ada data untuk di-export.")
+        return
+
+    filename = f"export_{username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
+    df.to_excel(filename, index=False, engine="openpyxl")
+
+    await update.message.reply_document(
+        document=open(filename, "rb"),
+        filename=filename,
+        caption="📊 Data keuangan berhasil di-export."
+    )
+
+    os.remove(filename)
+
 
 
 
@@ -312,7 +333,7 @@ def main():
     app.add_handler(CommandHandler("rekapbulan", rekapbulan))
     app.add_handler(CommandHandler("grafikhari", grafikhari))
     app.add_handler(CommandHandler("grafikbulan", grafikbulan))
-
+    app.add_handler(CommandHandler("export", export_excel))
 
 
     print("Bot running...")
@@ -320,6 +341,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
