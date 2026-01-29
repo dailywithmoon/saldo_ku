@@ -111,39 +111,73 @@ async def keluar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             "❌ Format salah\nGunakan: /keluar 50000 makan"
         )
+        
+async def rekaphari(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    username = get_username(update)
+    sheet = get_user_sheet(username)
 
+    masuk, keluar, saldo = hitung_rekap(sheet, "hari")
 
-async def rekap(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user.first_name
-    sh = client.open_by_key(SPREADSHEET_ID)
-
-    try:
-        ws = sh.worksheet(user)
-    except:
-        await update.message.reply_text("❌ Belum ada data.")
-        return
-
-    data = ws.get_all_values()[1:]
-
-    masuk_total = 0
-    keluar_total = 0
-
-    for row in data:
-        tipe = row[1]
-        jumlah = int(row[2])
-        if tipe == "MASUK":
-            masuk_total += jumlah
-        else:
-            keluar_total += jumlah
-
-    saldo = masuk_total - keluar_total
+    tanggal = datetime.now().strftime("%d-%m-%Y")
 
     await update.message.reply_text(
-        f"📊 Rekap {user}\n"
-        f"➕ Masuk: Rp {masuk_total:,}\n"
-        f"➖ Keluar: Rp {keluar_total:,}\n"
-        f"💰 Saldo: Rp {saldo:,}".replace(",", ".")
+        f"📊 Rekap Harian ({tanggal}) - {username}\n\n"
+        f"💰 Total Masuk : {masuk}\n"
+        f"💸 Total Keluar: {keluar}\n"
+        f"🧮 Saldo       : {saldo}"
     )
+
+async def rekapbulan(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    username = get_username(update)
+    sheet = get_user_sheet(username)
+
+    masuk, keluar, saldo = hitung_rekap(sheet, "bulan")
+
+    bulan = datetime.now().strftime("%B %Y")
+
+    await update.message.reply_text(
+        f"📊 Rekap Bulanan ({bulan}) - {username}\n\n"
+        f"💰 Total Masuk : {masuk}\n"
+        f"💸 Total Keluar: {keluar}\n"
+        f"🧮 Saldo       : {saldo}"
+    )
+
+
+
+def hitung_rekap(sheet, mode="hari"):
+    rows = sheet.get_all_values()[1:]  # skip header
+
+    total_masuk = 0
+    total_keluar = 0
+
+    now = datetime.now()
+
+    for row in rows:
+        try:
+            tanggal = datetime.strptime(row[0], "%Y-%m-%d %H:%M")
+            tipe = row[1]
+            jumlah = int(row[2])
+
+            if mode == "hari":
+                if tanggal.date() != now.date():
+                    continue
+
+            if mode == "bulan":
+                if tanggal.month != now.month or tanggal.year != now.year:
+                    continue
+
+            if tipe == "MASUK":
+                total_masuk += jumlah
+            elif tipe == "KELUAR":
+                total_keluar += jumlah
+
+        except:
+            continue
+
+    saldo = total_masuk - total_keluar
+
+    return total_masuk, total_keluar, saldo
+
 
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -151,13 +185,16 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("masuk", masuk))
     app.add_handler(CommandHandler("keluar", keluar))
-    app.add_handler(CommandHandler("rekap", rekap))
+    application.add_handler(CommandHandler("rekaphari", rekaphari))
+    application.add_handler(CommandHandler("rekapbulan", rekapbulan))
+
 
     print("Bot running...")
     app.run_polling()
 
 if __name__ == "__main__":
     main()
+
 
 
 
