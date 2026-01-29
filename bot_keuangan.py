@@ -9,12 +9,21 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN") or "8406234881:AAFZIdcHNcidzPDS9gYEPLhVU
 SPREADSHEET_ID = "1kaYGnxOcjX4NSO8FVGCXpXd0Vu61_ydmYRtpykR7Zik"
 JSON_KEYFILE = "service_account.json"
 
+# ===== GOOGLE SHEET SETUP =====
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
 ]
-creds = ServiceAccountCredentials.from_json_keyfile_name(JSON_KEYFILE, scope)
+
+creds = ServiceAccountCredentials.from_json_keyfile_name(
+    "service_account.json", scope
+)
+
 client = gspread.authorize(creds)
+
+# GANTI dengan nama spreadsheet kamu
+sheet = client.open("Saldo_Ku").sheet1
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -122,6 +131,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
